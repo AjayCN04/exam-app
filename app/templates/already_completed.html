@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Exam Submitted{% endblock %}
+{% block content %}
+<h1>Hi {{ name }}</h1>
+{% if just_submitted %}
+<p>Your exam has been submitted successfully. Thank you!</p>
+{% else %}
+<p>You have already completed this exam. No further action is needed.</p>
+{% endif %}
+{% endblock %}

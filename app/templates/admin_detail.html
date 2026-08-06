@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Detail - {{ participant.name }}{% endblock %}
+{% block content %}
+<h1>{{ participant.name }}</h1>
+<p><a href="{{ url_for('admin.dashboard') }}">&larr; Back to results</a></p>
+{% if not attempt %}
+<p>This participant has not started the exam yet.</p>
+{% else %}
+<p>Score: {{ attempt.total_score if attempt.total_score is not none else "In progress" }}</p>
+<table>
+  <thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Result</th></tr></thead>
+  <tbody>
+    {% for a in breakdown %}
+    {% set selected = a.options | selectattr("id", "equalto", a.selected_option_id) | first %}
+    {% set correct = a.options | selectattr("is_correct") | first %}
+    <tr>
+      <td>{{ a.question_text }}</td>
+      <td>{{ selected.option_text if selected else "(no answer)" }}</td>
+      <td>{{ correct.option_text if correct else "" }}</td>
+      <td>{{ "Correct" if a.is_correct else "Incorrect" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

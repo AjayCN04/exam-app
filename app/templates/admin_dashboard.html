@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h1>Exam Results</h1>
+<p><a href="{{ url_for('admin.export_csv') }}">Export CSV</a> &middot; <a href="{{ url_for('admin.logout') }}">Log out</a></p>
+<table>
+  <thead>
+    <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Submitted At</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.name }}</td>
+      <td>{{ r.email or "" }}</td>
+      <td>{{ r.status }}</td>
+      <td>{{ r.total_score if r.total_score is not none else "" }}</td>
+      <td>{{ r.submitted_at or "" }}</td>
+      <td><a href="{{ url_for('admin.participant_detail', participant_id=r.id) }}">Detail</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
