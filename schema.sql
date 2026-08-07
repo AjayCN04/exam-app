@@ -1,44 +1,128 @@
--- Internal Examination App schema (SQLite / libSQL flavored)
+-- Internal Examination App schema v2 (SQLite / libSQL flavored)
+-- Multi-set, multi-exam, multi-attempt design. Safe to re-run: drops and
+-- recreates everything, since no real content has been loaded yet.
 
-CREATE TABLE IF NOT EXISTS participants (
+DROP TABLE IF EXISTS exam_scores;
+DROP TABLE IF EXISTS attempt_answers;
+DROP TABLE IF EXISTS exam_attempts;
+DROP TABLE IF EXISTS exam_access;
+DROP TABLE IF EXISTS exams;
+DROP TABLE IF EXISTS answer_key;
+DROP TABLE IF EXISTS options;
+DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS question_sets;
+DROP TABLE IF EXISTS exam_modules;
+DROP TABLE IF EXISTS users;
+
+-- v1 table names that no longer exist under v2 naming
+DROP TABLE IF EXISTS participants;
+DROP TABLE IF EXISTS attempts;
+DROP TABLE IF EXISTS answers;
+
+CREATE TABLE exam_modules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT,
-    access_token TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    order_index INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE question_sets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS questions (
+CREATE TABLE questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    set_id INTEGER NOT NULL REFERENCES question_sets(id),
+    module_id INTEGER REFERENCES exam_modules(id),
     question_text TEXT NOT NULL,
     points INTEGER NOT NULL DEFAULT 1,
     order_index INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS options (
+CREATE TABLE options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     question_id INTEGER NOT NULL REFERENCES questions(id),
     option_text TEXT NOT NULL,
-    is_correct INTEGER NOT NULL DEFAULT 0,
     order_index INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS attempts (
+CREATE TABLE answer_key (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    participant_id INTEGER NOT NULL UNIQUE REFERENCES participants(id),
+    question_id INTEGER NOT NULL UNIQUE REFERENCES questions(id),
+    correct_option_id INTEGER NOT NULL REFERENCES options(id),
+    justification TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE exams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_number TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    set_id INTEGER NOT NULL REFERENCES question_sets(id),
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    max_attempts INTEGER,
+    questions_per_module INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE exam_access (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    exam_id INTEGER NOT NULL REFERENCES exams(id),
+    access_token TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (user_id, exam_id)
+);
+
+CREATE TABLE exam_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_access_id INTEGER NOT NULL REFERENCES exam_access(id),
+    attempt_number INTEGER NOT NULL,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
     submitted_at TEXT,
-    total_score INTEGER
+    total_score INTEGER,
+    UNIQUE (exam_access_id, attempt_number)
 );
 
-CREATE TABLE IF NOT EXISTS answers (
+CREATE TABLE attempt_answers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+    exam_attempt_id INTEGER NOT NULL REFERENCES exam_attempts(id),
     question_id INTEGER NOT NULL REFERENCES questions(id),
     selected_option_id INTEGER REFERENCES options(id),
-    is_correct INTEGER NOT NULL DEFAULT 0
+    is_correct INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (exam_attempt_id, question_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_options_question_id ON options(question_id);
-CREATE INDEX IF NOT EXISTS idx_answers_attempt_id ON answers(attempt_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_answers_attempt_question ON answers(attempt_id, question_id);
+CREATE TABLE exam_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_attempt_id INTEGER NOT NULL UNIQUE REFERENCES exam_attempts(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    exam_id INTEGER NOT NULL REFERENCES exams(id),
+    attempt_number INTEGER NOT NULL,
+    score INTEGER NOT NULL,
+    max_score INTEGER NOT NULL,
+    percentage REAL NOT NULL,
+    passed INTEGER,
+    scored_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_questions_set_id ON questions(set_id);
+CREATE INDEX idx_questions_module_id ON questions(module_id);
+CREATE INDEX idx_options_question_id ON options(question_id);
+CREATE INDEX idx_exam_access_exam_id ON exam_access(exam_id);
+CREATE INDEX idx_exam_attempts_access_id ON exam_attempts(exam_access_id);
+CREATE INDEX idx_attempt_answers_attempt_id ON attempt_answers(exam_attempt_id);
+CREATE INDEX idx_exam_scores_user_id ON exam_scores(user_id);
+CREATE INDEX idx_exam_scores_exam_id ON exam_scores(exam_id);
+CREATE INDEX idx_exam_scores_user_exam ON exam_scores(user_id, exam_id);

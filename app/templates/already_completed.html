@@ -1,10 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Exam Submitted{% endblock %}
+{% block title %}{% if just_submitted %}Exam Submitted{% else %}Exam Already Completed{% endif %}{% endblock %}
 {% block content %}
-<h1>Hi {{ name }}</h1>
-{% if just_submitted %}
-<p>Your exam has been submitted successfully. Thank you!</p>
-{% else %}
-<p>You have already completed this exam. No further action is needed.</p>
-{% endif %}
+<div class="result-card">
+  {% if just_submitted %}
+  <div class="icon">&check;</div>
+  <h1>Thank you, {{ name }}</h1>
+  <p>Your exam has been submitted successfully.</p>
+  <p>No further action is needed — you may close this page.</p>
+  {% else %}
+  <div class="icon">&#9432;</div>
+  <h1>Hi {{ name }}</h1>
+  <p>You have already completed this exam.</p>
+  <p>No further action is needed.</p>
+  {% endif %}
+</div>
 {% endblock %}

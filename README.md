@@ -82,8 +82,20 @@ If a question's correct answer needs fixing after the exam has been taken:
 1. Fix it directly in the DB (`turso db shell exam-app-db`) or via a small script.
 2. Run `python scripts/rescore.py` to recompute `is_correct`/`total_score` for every submitted attempt.
 
-## Deploying (not done yet)
+## Deploying
 
-A `Procfile` (`web: gunicorn "app:create_app()"`) is ready for Render or a similar host. Since the
-database already lives on Turso, the app server itself can be fully ephemeral/stateless — no local
-SQLite file, no persistence risk on redeploy.
+Deployed on [Render](https://render.com)'s free Web Service tier via the `render.yaml` Blueprint at
+the repo root. Since the database lives on Turso, the app server itself is fully
+ephemeral/stateless — no local SQLite file, no persistence risk on redeploy.
+
+To deploy: push this repo to GitHub, then in Render **New → Blueprint** and select it. Render reads
+`render.yaml` for the build/start commands and prompts for the secret env vars
+(`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `FLASK_SECRET_KEY`, `ADMIN_PASSWORD`) at deploy time —
+copy these from your local `.env`; they're never committed.
+
+Note: the free tier sleeps after 15 minutes of inactivity (~30-60s cold start on the next request).
+
+Once deployed, set `BASE_URL` to the Render-assigned URL when generating links locally:
+```bash
+BASE_URL=https://your-service.onrender.com python scripts/grant_exam_access.py <exam_number> <email>
+```

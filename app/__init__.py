@@ -10,6 +10,7 @@ def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
     app.config["ADMIN_PASSWORD"] = os.environ["ADMIN_PASSWORD"]
+    app.config["PASSING_PERCENTAGE"] = float(os.environ["PASSING_PERCENTAGE"])
 
     from .routes_admin import admin_bp
     from .routes_exam import exam_bp

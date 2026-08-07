@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: exam-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PASSING_PERCENTAGE
+        value: "80"
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

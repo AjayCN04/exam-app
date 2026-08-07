@@ -1,20 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Exam - {{ name }}{% endblock %}
+{% block title %}{{ exam_title }} - {{ name }}{% endblock %}
 {% block content %}
-<h1>Hello, {{ name }}</h1>
-<p>Please answer all questions, then submit. Once submitted, your answers are final.</p>
-<form method="post" action="{{ url_for('exam.submit_exam', token=token) }}">
+<header class="sticky-head">
+  <h1>{{ exam_title }}</h1>
+  <p class="subhead"><strong>{{ name }}</strong> &middot; {{ email }}</p>
+  <div class="progress-line">
+    <span id="progress-label"><strong>0</strong> of {{ questions|length }} answered</span>
+  </div>
+  <div class="track"><div class="fill" id="progress-fill"></div></div>
+</header>
+
+<p class="instructions">Answer every question below. You can change or clear any answer at any time before submitting — once submitted, your answers are final.</p>
+
+<form method="post" action="{{ url_for('exam.submit_exam', token=token) }}" id="examform">
   {% for q in questions %}
-  <fieldset class="question">
-    <legend>{{ loop.index }}. {{ q.question_text }}</legend>
-    {% for opt in q.options %}
-    <label class="option">
-      <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}" required>
-      {{ opt.option_text }}
-    </label>
-    {% endfor %}
+  <fieldset class="question" data-q="{{ loop.index }}">
+    <div class="q-meta">
+      <span class="q-number">Question {{ loop.index }} of {{ questions|length }}</span>
+      <span class="q-answered-flag">&check; Answered</span>
+    </div>
+    <p class="q-text">{{ q.question_text }}</p>
+    <div class="options">
+      {% for opt in q.options %}
+      <label class="option">
+        <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}">
+        <span class="option-text">{{ opt.option_text }}</span>
+      </label>
+      {% endfor %}
+    </div>
   </fieldset>
   {% endfor %}
-  <button type="submit">Submit Exam</button>
+
+  <div class="submit-row">
+    <button type="submit">Submit Exam</button>
+    <span class="hint">You can still change or clear any answer above before submitting.</span>
+  </div>
 </form>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='exam.js') }}"></script>
 {% endblock %}
