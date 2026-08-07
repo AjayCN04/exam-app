@@ -31,10 +31,11 @@ def logout():
 def _results_rows():
     rs = db.execute(
         """
-        SELECT p.id, p.name, p.email, a.started_at, a.submitted_at, a.total_score
-        FROM participants p
-        LEFT JOIN attempts a ON a.participant_id = p.id
-        ORDER BY p.name
+        SELECT ea.id, u.name, u.email, eat.started_at, eat.submitted_at, eat.total_score
+        FROM exam_access ea
+        JOIN users u ON u.id = ea.user_id
+        LEFT JOIN exam_attempts eat ON eat.exam_access_id = ea.id AND eat.attempt_number = 1
+        ORDER BY u.name
         """
     )
     rows = []
@@ -59,13 +60,22 @@ def dashboard():
 @admin_bp.route("/participant/<int:participant_id>")
 @admin_required
 def participant_detail(participant_id):
-    p_rs = db.execute("SELECT id, name, email FROM participants WHERE id = ?", [participant_id])
+    p_rs = db.execute(
+        """
+        SELECT ea.id, u.name, u.email
+        FROM exam_access ea
+        JOIN users u ON u.id = ea.user_id
+        WHERE ea.id = ?
+        """,
+        [participant_id],
+    )
     if not p_rs.rows:
         abort(404)
     participant = p_rs.rows[0].asdict()
 
     a_rs = db.execute(
-        "SELECT id, submitted_at, total_score FROM attempts WHERE participant_id = ?",
+        "SELECT id, submitted_at, total_score FROM exam_attempts "
+        "WHERE exam_access_id = ? AND attempt_number = 1",
         [participant_id],
     )
     attempt = a_rs.rows[0].asdict() if a_rs.rows else None
@@ -75,10 +85,10 @@ def participant_detail(participant_id):
         ans_rs = db.execute(
             """
             SELECT q.id AS question_id, q.question_text,
-                   ans.selected_option_id, ans.is_correct
-            FROM answers ans
-            JOIN questions q ON q.id = ans.question_id
-            WHERE ans.attempt_id = ?
+                   aa.selected_option_id, aa.is_correct
+            FROM attempt_answers aa
+            JOIN questions q ON q.id = aa.question_id
+            WHERE aa.exam_attempt_id = ?
             ORDER BY q.order_index
             """,
             [attempt["id"]],
@@ -86,7 +96,14 @@ def participant_detail(participant_id):
         for a_row in ans_rs.rows:
             a = a_row.asdict()
             opt_rs = db.execute(
-                "SELECT id, option_text, is_correct FROM options WHERE question_id = ? ORDER BY order_index",
+                """
+                SELECT o.id, o.option_text,
+                       CASE WHEN o.id = ak.correct_option_id THEN 1 ELSE 0 END AS is_correct
+                FROM options o
+                LEFT JOIN answer_key ak ON ak.question_id = o.question_id
+                WHERE o.question_id = ?
+                ORDER BY o.order_index
+                """,
                 [a["question_id"]],
             )
             a["options"] = [o.asdict() for o in opt_rs.rows]
