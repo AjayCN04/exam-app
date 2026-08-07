@@ -54,10 +54,16 @@
 
   <div class="form-group">
     <label>Participants</label>
-    <div class="checkbox-list">
+    {% if users %}
+    <div class="checkbox-row">
+      <input type="checkbox" id="select-all-users">
+      <label for="select-all-users"><strong>Select All</strong></label>
+    </div>
+    {% endif %}
+    <div class="checkbox-list" id="user-checkbox-list">
       {% for u in users %}
       <div class="checkbox-row">
-        <input type="checkbox" id="user_{{ u.id }}" name="user_ids" value="{{ u.id }}"
+        <input type="checkbox" id="user_{{ u.id }}" name="user_ids" value="{{ u.id }}" class="user-checkbox"
                {{ "checked" if u.id|string in form.getlist('user_ids') else "" }}>
         <label for="user_{{ u.id }}">{{ u.name }} <span class="available">{{ u.email or "" }}</span></label>
       </div>
@@ -98,6 +104,24 @@
 
     setSelect.addEventListener("change", sync);
     sync();
+  })();
+
+  (function () {
+    var selectAll = document.getElementById("select-all-users");
+    if (!selectAll) return;
+    var userCheckboxes = document.querySelectorAll(".user-checkbox");
+
+    selectAll.addEventListener("change", function () {
+      userCheckboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+    });
+
+    userCheckboxes.forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        selectAll.checked = Array.prototype.every.call(userCheckboxes, function (c) { return c.checked; });
+      });
+    });
+
+    selectAll.checked = Array.prototype.every.call(userCheckboxes, function (c) { return c.checked; });
   })();
 </script>
 {% endblock %}
