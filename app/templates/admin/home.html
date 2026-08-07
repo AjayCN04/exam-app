@@ -1,0 +1,39 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Admin Home{% endblock %}
+{% block admin_content %}
+<div class="hero">
+  <img src="{{ url_for('static', filename='images/home-hero.jpg') }}" alt=""
+       onerror="this.style.display='none'">
+  <h1>Exam Admin</h1>
+  <p>Create exams, manage participants, and review results.</p>
+</div>
+
+<div class="tile-grid">
+  <a class="tile" href="{{ url_for('admin.exam_new') }}">
+    <span class="tile-icon">
+      <img src="{{ url_for('static', filename='images/icon-create-exam.png') }}" alt=""
+           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    </span>
+    <h3>Create Exam</h3>
+    <p>Pick modules, question counts, participants, and a pass mark.</p>
+  </a>
+
+  <a class="tile" href="{{ url_for('admin.exams_list') }}">
+    <span class="tile-icon">
+      <img src="{{ url_for('static', filename='images/icon-view-results.png') }}" alt=""
+           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    </span>
+    <h3>View Exam Results</h3>
+    <p>See status and scores for every exam, one at a time.</p>
+  </a>
+
+  <a class="tile" href="{{ url_for('admin.users_list') }}">
+    <span class="tile-icon">
+      <img src="{{ url_for('static', filename='images/icon-manage-users.png') }}" alt=""
+           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    </span>
+    <h3>Manage Users</h3>
+    <p>Add, edit, and archive exam participants.</p>
+  </a>
+</div>
+{% endblock %}

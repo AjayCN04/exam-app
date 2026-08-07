@@ -1,8 +1,10 @@
-{% extends "base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
-{% block content %}
-<h1>Exam Results</h1>
-<p><a href="{{ url_for('admin.export_csv') }}">Export CSV</a> &middot; <a href="{{ url_for('admin.logout') }}">Log out</a></p>
+{% extends "admin/_layout.html" %}
+{% block title %}Results - {{ exam.title }}{% endblock %}
+{% block admin_content %}
+<h1>{{ exam.title }}</h1>
+<p><a href="{{ url_for('admin.exams_list') }}">&larr; Back to exams</a></p>
+<p class="actions"><a href="{{ url_for('admin.exam_export_csv', exam_id=exam.id) }}">Export CSV</a></p>
+
 <table>
   <thead>
     <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Submitted At</th><th></th></tr>
@@ -17,6 +19,8 @@
       <td>{{ r.submitted_at or "" }}</td>
       <td><a href="{{ url_for('admin.participant_detail', participant_id=r.id) }}">Detail</a></td>
     </tr>
+    {% else %}
+    <tr><td colspan="6">No participants have been granted access to this exam yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>

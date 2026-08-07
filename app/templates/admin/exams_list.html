@@ -1,0 +1,29 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Exam Results{% endblock %}
+{% block admin_content %}
+<h1>Exam Results</h1>
+<p class="actions"><a href="{{ url_for('admin.exam_new') }}">+ Create Exam</a></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Exam</th>
+      <th>Number</th>
+      <th>Status</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in exams %}
+    <tr>
+      <td>{{ e.title }}</td>
+      <td>{{ e.exam_number }}</td>
+      <td><span class="status-badge {{ e.status }}">{{ e.status }}</span></td>
+      <td><a href="{{ url_for('admin.exam_results', exam_id=e.id) }}">View Results</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No exams created yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

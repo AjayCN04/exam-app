@@ -5,6 +5,7 @@
 DROP TABLE IF EXISTS exam_scores;
 DROP TABLE IF EXISTS attempt_answers;
 DROP TABLE IF EXISTS exam_attempts;
+DROP TABLE IF EXISTS exam_module_config;
 DROP TABLE IF EXISTS exam_access;
 DROP TABLE IF EXISTS exams;
 DROP TABLE IF EXISTS answer_key;
@@ -61,6 +62,7 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -73,6 +75,7 @@ CREATE TABLE exams (
     end_time TEXT NOT NULL,
     max_attempts INTEGER,
     questions_per_module INTEGER,
+    passing_percentage REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -83,6 +86,18 @@ CREATE TABLE exam_access (
     access_token TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (user_id, exam_id)
+);
+
+-- One row per module included in an exam, with that module's question count.
+-- A module with no row for a given exam wasn't selected. Only populated for
+-- exams created through the admin UI; exams predating this feature keep
+-- using the legacy exams.questions_per_module global column instead.
+CREATE TABLE exam_module_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exam_id INTEGER NOT NULL REFERENCES exams(id),
+    module_id INTEGER NOT NULL REFERENCES exam_modules(id),
+    question_count INTEGER NOT NULL,
+    UNIQUE (exam_id, module_id)
 );
 
 CREATE TABLE exam_attempts (
@@ -121,6 +136,7 @@ CREATE INDEX idx_questions_set_id ON questions(set_id);
 CREATE INDEX idx_questions_module_id ON questions(module_id);
 CREATE INDEX idx_options_question_id ON options(question_id);
 CREATE INDEX idx_exam_access_exam_id ON exam_access(exam_id);
+CREATE INDEX idx_exam_module_config_exam_id ON exam_module_config(exam_id);
 CREATE INDEX idx_exam_attempts_access_id ON exam_attempts(exam_access_id);
 CREATE INDEX idx_attempt_answers_attempt_id ON attempt_answers(exam_attempt_id);
 CREATE INDEX idx_exam_scores_user_id ON exam_scores(user_id);

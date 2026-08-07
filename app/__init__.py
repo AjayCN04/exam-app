@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from flask import Flask
+from flask_wtf import CSRFProtect
 
 
 def create_app():
@@ -12,7 +13,9 @@ def create_app():
     app.config["ADMIN_PASSWORD"] = os.environ["ADMIN_PASSWORD"]
     app.config["PASSING_PERCENTAGE"] = float(os.environ["PASSING_PERCENTAGE"])
 
-    from .routes_admin import admin_bp
+    CSRFProtect(app)
+
+    from .admin import admin_bp
     from .routes_exam import exam_bp
 
     app.register_blueprint(exam_bp)

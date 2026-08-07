@@ -13,6 +13,7 @@
 <p class="instructions">Answer every question below. You can change or clear any answer at any time before submitting — once submitted, your answers are final.</p>
 
 <form method="post" action="{{ url_for('exam.submit_exam', token=token) }}" id="examform">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for q in questions %}
   <fieldset class="question" data-q="{{ loop.index }}">
     <div class="q-meta">

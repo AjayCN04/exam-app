@@ -1,8 +1,8 @@
-{% extends "base.html" %}
+{% extends "admin/_layout.html" %}
 {% block title %}Detail - {{ participant.name }}{% endblock %}
-{% block content %}
+{% block admin_content %}
 <h1>{{ participant.name }}</h1>
-<p><a href="{{ url_for('admin.dashboard') }}">&larr; Back to results</a></p>
+<p><a href="{{ url_for('admin.exam_results', exam_id=participant.exam_id) }}">&larr; Back to results</a></p>
 {% if not attempt %}
 <p>This participant has not started the exam yet.</p>
 {% else %}

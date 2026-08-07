@@ -12,7 +12,8 @@ def _get_access(token):
     rs = db.execute(
         """
         SELECT ea.id AS exam_access_id, u.id AS user_id, u.name, u.email,
-               e.id AS exam_id, e.title AS exam_title, e.set_id, e.questions_per_module
+               e.id AS exam_id, e.title AS exam_title, e.set_id,
+               e.questions_per_module, e.passing_percentage
         FROM exam_access ea
         JOIN users u ON u.id = ea.user_id
         JOIN exams e ON e.id = ea.exam_id
@@ -41,9 +42,27 @@ def _get_or_create_attempt(exam_access_id):
     return {"id": rs.last_insert_rowid, "submitted_at": None, "total_score": None}
 
 
-def _select_question_ids(set_id, questions_per_module):
-    """The exam's fixed question list: every question in the set, or (if
-    questions_per_module is set) the first N — by order_index — from each module."""
+def _select_question_ids(exam_id, set_id, questions_per_module):
+    """The exam's fixed question list. Exams created via the admin UI have
+    per-module counts in exam_module_config — use those. Exams that predate
+    that feature have no rows there, and fall back to the legacy behavior:
+    every question in the set, or (if questions_per_module is set) the first
+    N — by order_index — from each module, applied uniformly."""
+    config_rs = db.execute(
+        "SELECT module_id, question_count FROM exam_module_config WHERE exam_id = ?",
+        [exam_id],
+    )
+    if config_rs.rows:
+        ids = []
+        for module_id, question_count in config_rs.rows:
+            rs = db.execute(
+                "SELECT id FROM questions WHERE set_id = ? AND module_id = ? "
+                "ORDER BY order_index LIMIT ?",
+                [set_id, module_id, question_count],
+            )
+            ids.extend(row[0] for row in rs.rows)
+        return ids
+
     if not questions_per_module:
         rs = db.execute("SELECT id FROM questions WHERE set_id = ?", [set_id])
         return [row[0] for row in rs.rows]
@@ -62,8 +81,8 @@ def _select_question_ids(set_id, questions_per_module):
     return ids
 
 
-def _load_questions(set_id, questions_per_module, seed):
-    question_ids = _select_question_ids(set_id, questions_per_module)
+def _load_questions(exam_id, set_id, questions_per_module, seed):
+    question_ids = _select_question_ids(exam_id, set_id, questions_per_module)
     placeholders = ",".join("?" for _ in question_ids)
     q_rs = db.execute(
         f"SELECT id, question_text FROM questions WHERE id IN ({placeholders})",
@@ -97,7 +116,8 @@ def show_exam(token):
         return render_template("already_completed.html", name=access["name"])
 
     questions = _load_questions(
-        access["set_id"], access["questions_per_module"], seed=access["exam_access_id"]
+        access["exam_id"], access["set_id"], access["questions_per_module"],
+        seed=access["exam_access_id"],
     )
     return render_template(
         "exam.html",
@@ -119,7 +139,9 @@ def submit_exam(token):
     if attempt["submitted_at"]:
         return render_template("already_completed.html", name=access["name"])
 
-    question_ids = _select_question_ids(access["set_id"], access["questions_per_module"])
+    question_ids = _select_question_ids(
+        access["exam_id"], access["set_id"], access["questions_per_module"]
+    )
     placeholders = ",".join("?" for _ in question_ids)
     q_rs = db.execute(
         f"""
@@ -145,7 +167,7 @@ def submit_exam(token):
             [attempt["id"], q["id"], selected_id, 1 if is_correct else 0],
         )
 
-    result = score_attempt(answers)
+    result = score_attempt(answers, passing_percentage_override=access["passing_percentage"])
 
     db.execute(
         "UPDATE exam_attempts SET submitted_at = datetime('now'), total_score = ? WHERE id = ?",

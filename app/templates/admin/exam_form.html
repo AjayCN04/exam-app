@@ -1,0 +1,103 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Create Exam{% endblock %}
+{% block admin_content %}
+<h1>Create Exam</h1>
+<p><a href="{{ url_for('admin.exams_list') }}">&larr; Back to exams</a></p>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="post" id="exam-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="form-group">
+    <label for="exam_number">Exam Number</label>
+    <input type="text" id="exam_number" name="exam_number" value="{{ form.get('exam_number', '') }}" required>
+  </div>
+
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input type="text" id="title" name="title" value="{{ form.get('title', '') }}" required>
+  </div>
+
+  <div class="form-group">
+    <label for="set_id">Question Set</label>
+    <select id="set_id" name="set_id" required>
+      <option value="">Select a question set&hellip;</option>
+      {% for s in sets %}
+      <option value="{{ s.id }}" {{ "selected" if form.get('set_id', type=int) == s.id else "" }}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Modules &amp; Question Counts</label>
+    <p class="hint" id="no-set-hint">Choose a question set above to see its modules.</p>
+    {% for s in sets %}
+    <div class="module-block" data-set-id="{{ s.id }}">
+      <div class="checkbox-list">
+        {% for m in s.modules %}
+        <div class="checkbox-row">
+          <input type="checkbox" id="module_{{ m.id }}" name="module_{{ m.id }}"
+                 {{ "checked" if form.get('module_' ~ m.id) else "" }}>
+          <label for="module_{{ m.id }}">{{ m.name }}</label>
+          <span class="available">{{ m.available }} available</span>
+          <input type="number" name="count_{{ m.id }}" min="1" max="{{ m.available }}"
+                 value="{{ form.get('count_' ~ m.id, '') }}" placeholder="count">
+        </div>
+        {% else %}
+        <p>This set has no modules with questions yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="form-group">
+    <label>Participants</label>
+    <div class="checkbox-list">
+      {% for u in users %}
+      <div class="checkbox-row">
+        <input type="checkbox" id="user_{{ u.id }}" name="user_ids" value="{{ u.id }}"
+               {{ "checked" if u.id|string in form.getlist('user_ids') else "" }}>
+        <label for="user_{{ u.id }}">{{ u.name }} <span class="available">{{ u.email or "" }}</span></label>
+      </div>
+      {% else %}
+      <p>No active users yet. <a href="{{ url_for('admin.user_new') }}">Add one first</a>.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="passing_percentage">Pass Percentage</label>
+    <select id="passing_percentage" name="passing_percentage" required>
+      <option value="">Select&hellip;</option>
+      {% for p in pass_choices %}
+      <option value="{{ p }}" {{ "selected" if form.get('passing_percentage', type=int) == p else "" }}>{{ p }}%</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button type="submit">Create Exam</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var setSelect = document.getElementById("set_id");
+    var blocks = document.querySelectorAll(".module-block");
+    var hint = document.getElementById("no-set-hint");
+
+    function sync() {
+      var chosen = setSelect.value;
+      blocks.forEach(function (b) {
+        b.classList.toggle("visible", b.dataset.setId === chosen);
+      });
+      hint.style.display = chosen ? "none" : "block";
+    }
+
+    setSelect.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

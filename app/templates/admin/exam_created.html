@@ -1,0 +1,39 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Exam Created{% endblock %}
+{% block admin_content %}
+<h1>Exam Created</h1>
+<p>"{{ exam.title }}" ({{ exam.exam_number }}) is ready. Share each link below with the matching participant.</p>
+
+<table>
+  <thead><tr><th>Name</th><th>Email</th><th>Link</th><th></th></tr></thead>
+  <tbody>
+    {% for l in links %}
+    <tr>
+      <td>{{ l.name }}</td>
+      <td>{{ l.email or "" }}</td>
+      <td><code class="link-url" id="link-{{ loop.index }}">{{ l.url }}</code></td>
+      <td><button type="button" class="btn-secondary copy-btn" onclick="copyLink({{ loop.index }}, this)">Copy</button></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="actions">
+  <a href="{{ url_for('admin.exam_results', exam_id=exam.id) }}">View this exam's results</a>
+  &middot;
+  <a href="{{ url_for('admin.exams_list') }}">Back to exams</a>
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyLink(index, btn) {
+    var text = document.getElementById("link-" + index).textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(function () { btn.textContent = original; }, 1500);
+    });
+  }
+</script>
+{% endblock %}
