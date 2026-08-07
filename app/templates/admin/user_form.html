@@ -18,4 +18,14 @@
   </div>
   <button type="submit">{{ "Save Changes" if user else "Add User" }}</button>
 </form>
+
+{% if user %}
+<div class="actions">
+  <form method="post" action="{{ url_for('admin.user_archive', user_id=user.id) }}"
+        onsubmit="return confirm('Archive ' + {{ user.name|tojson }} + '? Their exam history stays intact and they can be reactivated later.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn-danger">Archive User</button>
+  </form>
+</div>
+{% endif %}
 {% endblock %}

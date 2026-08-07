@@ -34,12 +34,6 @@
         </form>
         {% else %}
         <a href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a>
-        &middot;
-        <form method="post" action="{{ url_for('admin.user_archive', user_id=u.id) }}" style="display:inline"
-              onsubmit="return confirm('Archive {{ u.name }}? Their exam history stays intact and they can be reactivated later.');">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn-danger">Archive</button>
-        </form>
         {% endif %}
       </td>
     </tr>
