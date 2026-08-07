@@ -40,10 +40,18 @@ def exam_export_csv(exam_id):
     rows = results_rows(exam_id)
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["name", "email", "status", "score", "result", "submitted_at"])
+    writer.writerow(["name", "email", "status", "score", "percentage", "result", "submitted_at"])
     for r in rows:
         writer.writerow(
-            [r["name"], r["email"] or "", r["status"], r["total_score"], r["result"], r["submitted_at"] or ""]
+            [
+                r["name"],
+                r["email"] or "",
+                r["status"],
+                r["total_score"],
+                r["percentage"],
+                r["result"],
+                r["submitted_at"] or "",
+            ]
         )
     return Response(
         buf.getvalue(),
@@ -52,9 +60,10 @@ def exam_export_csv(exam_id):
     )
 
 
-@admin_bp.route("/participant/<int:participant_id>")
-@admin_required
-def participant_detail(participant_id):
+def _participant_breakdown(participant_id):
+    """Returns (participant, attempt, breakdown) for the given exam_access id,
+    or None if it doesn't exist. Shared by the detail page and its CSV export
+    so both always show exactly the same data."""
     p_rs = db.execute(
         """
         SELECT ea.id, ea.exam_id, u.name, u.email
@@ -65,7 +74,7 @@ def participant_detail(participant_id):
         [participant_id],
     )
     if not p_rs.rows:
-        abort(404)
+        return None
     participant = p_rs.rows[0].asdict()
 
     a_rs = db.execute(
@@ -104,9 +113,51 @@ def participant_detail(participant_id):
             a["options"] = [o.asdict() for o in opt_rs.rows]
             breakdown.append(a)
 
+    return participant, attempt, breakdown
+
+
+@admin_bp.route("/participant/<int:participant_id>")
+@admin_required
+def participant_detail(participant_id):
+    result = _participant_breakdown(participant_id)
+    if result is None:
+        abort(404)
+    participant, attempt, breakdown = result
+
     return render_template(
         "admin/participant_detail.html",
         participant=participant,
         attempt=attempt,
         breakdown=breakdown,
+    )
+
+
+@admin_bp.route("/participant/<int:participant_id>/export.csv")
+@admin_required
+def participant_export_csv(participant_id):
+    result = _participant_breakdown(participant_id)
+    if result is None:
+        abort(404)
+    participant, _attempt, breakdown = result
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["question", "selected", "correct_answer", "result"])
+    for a in breakdown:
+        selected = next((o for o in a["options"] if o["id"] == a["selected_option_id"]), None)
+        correct = next((o for o in a["options"] if o["is_correct"]), None)
+        writer.writerow(
+            [
+                a["question_text"],
+                selected["option_text"] if selected else "",
+                correct["option_text"] if correct else "",
+                "Correct" if a["is_correct"] else "Incorrect",
+            ]
+        )
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=participant_{participant_id}_detail.csv"
+        },
     )

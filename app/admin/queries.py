@@ -41,7 +41,7 @@ def results_rows(exam_id):
     rs = db.execute(
         """
         SELECT ea.id, ea.access_token, u.name, u.email, eat.started_at, eat.submitted_at,
-               eat.total_score, es.passed
+               eat.total_score, es.percentage, es.passed
         FROM exam_access ea
         JOIN users u ON u.id = ea.user_id
         LEFT JOIN exam_attempts eat ON eat.exam_access_id = ea.id AND eat.attempt_number = 1
