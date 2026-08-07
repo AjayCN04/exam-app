@@ -514,6 +514,76 @@ code.link-url {
   display: block;
 }
 
+/* ---------- Filter bar + sort control (exam results) ---------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 140px;
+}
+
+.filter-field label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-field input[type="text"],
+.filter-field input[type="number"],
+.filter-field select {
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.88rem;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.range-inputs input[type="number"] {
+  width: 70px;
+}
+
+.range-inputs span {
+  color: var(--ink-faint);
+}
+
+.sort-field-group .range-inputs select {
+  min-width: 130px;
+}
+
+#no-match-hint {
+  color: var(--ink-faint);
+  font-style: italic;
+  margin-top: 1rem;
+}
+
 /* ---------- Login page ---------- */
 .login-shell {
   min-height: calc(100vh - 4rem);

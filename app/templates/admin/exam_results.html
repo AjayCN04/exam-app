@@ -5,17 +5,79 @@
 <p><a href="{{ url_for('admin.exams_list') }}">&larr; Back to exams</a></p>
 <p class="actions"><a href="{{ url_for('admin.exam_export_csv', exam_id=exam.id) }}">Export CSV</a></p>
 
-<table>
+<div class="filter-bar">
+  <div class="filter-field">
+    <label for="filter-name">Name</label>
+    <input type="text" id="filter-name" placeholder="Search name&hellip;">
+  </div>
+  <div class="filter-field">
+    <label for="filter-status">Status</label>
+    <select id="filter-status">
+      <option value="">All</option>
+      <option value="Yet to Start">Yet to Start</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Completed">Completed</option>
+    </select>
+  </div>
+  <div class="filter-field range-field">
+    <label>Score</label>
+    <div class="range-inputs">
+      <input type="number" id="filter-score-min" placeholder="Min">
+      <span>&ndash;</span>
+      <input type="number" id="filter-score-max" placeholder="Max">
+    </div>
+  </div>
+  <div class="filter-field range-field">
+    <label>Percentage</label>
+    <div class="range-inputs">
+      <input type="number" id="filter-pct-min" placeholder="Min">
+      <span>&ndash;</span>
+      <input type="number" id="filter-pct-max" placeholder="Max">
+    </div>
+  </div>
+  <div class="filter-field">
+    <label for="filter-result">Result</label>
+    <select id="filter-result">
+      <option value="">All</option>
+      <option value="Pass">Pass</option>
+      <option value="Fail">Fail</option>
+      <option value="__none__">Not yet scored</option>
+    </select>
+  </div>
+
+  <div class="filter-field sort-field-group">
+    <label for="sort-field">Sort by</label>
+    <div class="range-inputs">
+      <select id="sort-field">
+        <option value="name">Name</option>
+        <option value="status">Status</option>
+        <option value="score">Score</option>
+        <option value="percentage">Percentage</option>
+        <option value="result">Result</option>
+      </select>
+      <select id="sort-direction">
+        <option value="asc">Ascending</option>
+        <option value="desc">Descending</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<table id="results-table">
   <thead>
-    <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Result</th><th>Submitted At</th><th></th><th></th></tr>
+    <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Percentage</th><th>Result</th><th>Submitted At</th><th></th><th></th></tr>
   </thead>
   <tbody>
     {% for r in results %}
-    <tr>
+    <tr data-name="{{ r.name }}" data-status="{{ r.status }}"
+        data-score="{{ r.total_score if r.total_score is not none else '' }}"
+        data-percentage="{{ r.percentage if r.percentage is not none else '' }}"
+        data-result="{{ r.result }}">
       <td>{{ r.name }}</td>
       <td>{{ r.email or "" }}</td>
       <td>{{ r.status }}</td>
       <td>{{ r.total_score if r.total_score is not none else "" }}</td>
+      <td>{{ "%.1f"|format(r.percentage) ~ "%" if r.percentage is not none else "" }}</td>
       <td>
         {% if r.result %}<span class="status-badge {{ 'completed' if r.result == 'Pass' else 'failed' }}">{{ r.result }}</span>{% endif %}
       </td>
@@ -36,10 +98,11 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="8">No participants have been granted access to this exam yet.</td></tr>
+    <tr><td colspan="9">No participants have been granted access to this exam yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>
+<p class="hint" id="no-match-hint" style="display:none">No participants match the current filters.</p>
 {% endblock %}
 
 {% block scripts %}
@@ -50,5 +113,102 @@
       setTimeout(function () { btn.classList.remove("copied"); }, 1200);
     });
   }
+
+  (function () {
+    var tbody = document.querySelector("#results-table tbody");
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-name]"));
+    if (!rows.length) return;
+
+    var nameInput = document.getElementById("filter-name");
+    var statusSelect = document.getElementById("filter-status");
+    var resultSelect = document.getElementById("filter-result");
+    var scoreMin = document.getElementById("filter-score-min");
+    var scoreMax = document.getElementById("filter-score-max");
+    var pctMin = document.getElementById("filter-pct-min");
+    var pctMax = document.getElementById("filter-pct-max");
+    var sortField = document.getElementById("sort-field");
+    var sortDir = document.getElementById("sort-direction");
+    var noMatchHint = document.getElementById("no-match-hint");
+
+    function numOrNull(v) {
+      return v === "" || v === null || v === undefined ? null : parseFloat(v);
+    }
+
+    function applyFilters() {
+      var name = nameInput.value.trim().toLowerCase();
+      var status = statusSelect.value;
+      var result = resultSelect.value;
+      var sMin = numOrNull(scoreMin.value);
+      var sMax = numOrNull(scoreMax.value);
+      var pMin = numOrNull(pctMin.value);
+      var pMax = numOrNull(pctMax.value);
+      var visibleCount = 0;
+
+      rows.forEach(function (row) {
+        var rName = row.dataset.name.toLowerCase();
+        var rStatus = row.dataset.status;
+        var rResult = row.dataset.result;
+        var rScore = numOrNull(row.dataset.score);
+        var rPct = numOrNull(row.dataset.percentage);
+
+        var visible = true;
+        if (name && rName.indexOf(name) === -1) visible = false;
+        if (status && rStatus !== status) visible = false;
+        if (result === "__none__") {
+          if (rResult !== "") visible = false;
+        } else if (result && rResult !== result) {
+          visible = false;
+        }
+        if (sMin !== null && (rScore === null || rScore < sMin)) visible = false;
+        if (sMax !== null && (rScore === null || rScore > sMax)) visible = false;
+        if (pMin !== null && (rPct === null || rPct < pMin)) visible = false;
+        if (pMax !== null && (rPct === null || rPct > pMax)) visible = false;
+
+        row.style.display = visible ? "" : "none";
+        if (visible) visibleCount++;
+      });
+
+      noMatchHint.style.display = visibleCount === 0 ? "block" : "none";
+    }
+
+    function applySort() {
+      var field = sortField.value;
+      var dir = sortDir.value === "desc" ? -1 : 1;
+      var numeric = field === "score" || field === "percentage";
+
+      var sorted = rows.slice().sort(function (a, b) {
+        var av, bv;
+        if (numeric) {
+          av = numOrNull(a.dataset[field]);
+          bv = numOrNull(b.dataset[field]);
+        } else {
+          av = a.dataset[field].toLowerCase();
+          bv = b.dataset[field].toLowerCase();
+        }
+
+        var aEmpty = av === null || av === "";
+        var bEmpty = bv === null || bv === "";
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
+
+        if (av < bv) return -1 * dir;
+        if (av > bv) return 1 * dir;
+        return 0;
+      });
+
+      sorted.forEach(function (row) { tbody.appendChild(row); });
+    }
+
+    [nameInput, scoreMin, scoreMax, pctMin, pctMax].forEach(function (el) {
+      el.addEventListener("input", applyFilters);
+    });
+    [statusSelect, resultSelect].forEach(function (el) {
+      el.addEventListener("change", applyFilters);
+    });
+    [sortField, sortDir].forEach(function (el) {
+      el.addEventListener("change", applySort);
+    });
+  })();
 </script>
 {% endblock %}
