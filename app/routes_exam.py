@@ -175,7 +175,7 @@ def submit_exam(token):
     )
     db.execute(
         "INSERT INTO exam_scores (exam_attempt_id, user_id, exam_id, attempt_number, score, "
-        "max_score, percentage, passed) VALUES (?, ?, ?, 1, ?, ?, ?, ?)",
+        "max_score, percentage, passed, user_name, exam_name) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)",
         [
             attempt["id"],
             access["user_id"],
@@ -184,6 +184,8 @@ def submit_exam(token):
             result["max_score"],
             result["percentage"],
             1 if result["passed"] else 0,
+            access["name"],
+            access["exam_title"],
         ],
     )
 

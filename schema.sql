@@ -129,6 +129,12 @@ CREATE TABLE exam_scores (
     max_score INTEGER NOT NULL,
     percentage REAL NOT NULL,
     passed INTEGER,
+    -- Denormalized copies of users.name / exams.title, kept in sync with user
+    -- renames (see app/admin/users.py's user_edit). Exam titles can't be
+    -- edited today so exam_name never goes stale, but a future edit-exam
+    -- feature would need to cascade-update this column too.
+    user_name TEXT,
+    exam_name TEXT,
     scored_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -66,6 +66,10 @@ def user_edit(user_id):
                 "UPDATE users SET name = ?, email = ? WHERE id = ?",
                 [form["name"], form["email"], user_id],
             )
+            db.execute(
+                "UPDATE exam_scores SET user_name = ? WHERE user_id = ?",
+                [form["name"], user_id],
+            )
             flash(f"Updated {form['name']}.")
             return redirect(url_for("admin.users_list"))
     return render_template("admin/user_form.html", user=user, form=form, error=error)
