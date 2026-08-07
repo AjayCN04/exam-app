@@ -1,7 +1,8 @@
 import csv
 import io
+import os
 
-from flask import Response, abort, render_template
+from flask import Response, abort, render_template, request
 
 from . import admin_bp
 from .. import db
@@ -22,7 +23,10 @@ def exam_results(exam_id):
     if not exam_rs.rows:
         abort(404)
     exam = exam_rs.rows[0].asdict()
-    return render_template("admin/exam_results.html", exam=exam, results=results_rows(exam_id))
+    base_url = os.environ.get("BASE_URL", request.host_url.rstrip("/"))
+    return render_template(
+        "admin/exam_results.html", exam=exam, results=results_rows(exam_id), base_url=base_url
+    )
 
 
 @admin_bp.route("/exams/<int:exam_id>/export.csv")

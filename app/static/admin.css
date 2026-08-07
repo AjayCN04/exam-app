@@ -477,6 +477,43 @@ code.link-url {
   border-radius: 4px;
 }
 
+/* ---------- Icon-only buttons (e.g. copy-link) ---------- */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  padding: 0.4rem !important;
+  border-radius: 8px;
+  color: var(--ink-muted) !important;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.icon-btn .icon-check {
+  display: none;
+  color: var(--good);
+}
+
+.icon-btn.copied .icon-copy {
+  display: none;
+}
+
+.icon-btn.copied .icon-check {
+  display: block;
+}
+
 /* ---------- Login page ---------- */
 .login-shell {
   min-height: calc(100vh - 4rem);

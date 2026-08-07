@@ -7,7 +7,7 @@
 
 <table>
   <thead>
-    <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Result</th><th>Submitted At</th><th></th></tr>
+    <tr><th>Name</th><th>Email</th><th>Status</th><th>Score</th><th>Result</th><th>Submitted At</th><th></th><th></th></tr>
   </thead>
   <tbody>
     {% for r in results %}
@@ -21,10 +21,34 @@
       </td>
       <td>{{ r.submitted_at or "" }}</td>
       <td><a href="{{ url_for('admin.participant_detail', participant_id=r.id) }}">Detail</a></td>
+      <td>
+        <button type="button" class="icon-btn copy-icon-btn" aria-label="Copy exam link for {{ r.name }}"
+                title="Copy exam link" data-link="{{ base_url }}/exam/{{ r.access_token }}"
+                onclick="copyRowLink(this)">
+          <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+        </button>
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="7">No participants have been granted access to this exam yet.</td></tr>
+    <tr><td colspan="8">No participants have been granted access to this exam yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyRowLink(btn) {
+    navigator.clipboard.writeText(btn.dataset.link).then(function () {
+      btn.classList.add("copied");
+      setTimeout(function () { btn.classList.remove("copied"); }, 1200);
+    });
+  }
+</script>
 {% endblock %}

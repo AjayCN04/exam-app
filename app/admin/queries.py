@@ -30,11 +30,18 @@ def list_exams_with_status():
     return [r.asdict() for r in rs.rows]
 
 
+STATUS_LABELS = {
+    "not_started": "Yet to Start",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+}
+
+
 def results_rows(exam_id):
     rs = db.execute(
         """
-        SELECT ea.id, u.name, u.email, eat.started_at, eat.submitted_at, eat.total_score,
-               es.passed
+        SELECT ea.id, ea.access_token, u.name, u.email, eat.started_at, eat.submitted_at,
+               eat.total_score, es.passed
         FROM exam_access ea
         JOIN users u ON u.id = ea.user_id
         LEFT JOIN exam_attempts eat ON eat.exam_access_id = ea.id AND eat.attempt_number = 1
@@ -48,11 +55,12 @@ def results_rows(exam_id):
     for row in rs.rows:
         r = row.asdict()
         if r["submitted_at"]:
-            r["status"] = "completed"
+            status = "completed"
         elif r["started_at"]:
-            r["status"] = "in_progress"
+            status = "in_progress"
         else:
-            r["status"] = "not_started"
+            status = "not_started"
+        r["status"] = STATUS_LABELS[status]
 
         if r["passed"] is None:
             r["result"] = ""
