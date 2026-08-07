@@ -1,6 +1,8 @@
 import csv
 import io
 import os
+import re
+import textwrap
 
 from flask import Response, abort, render_template, request
 
@@ -132,6 +134,17 @@ def participant_detail(participant_id):
     )
 
 
+def _safe_filename(text):
+    """Strip characters that are awkward or invalid in a downloaded filename,
+    collapsing whitespace so names/titles with odd spacing still read cleanly."""
+    text = re.sub(r'[\\/:*?"<>|,]', "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _wrap(text):
+    return textwrap.fill(text, width=60) if text else text
+
+
 @admin_bp.route("/participant/<int:participant_id>/export.csv")
 @admin_required
 def participant_export_csv(participant_id):
@@ -140,24 +153,27 @@ def participant_export_csv(participant_id):
         abort(404)
     participant, _attempt, breakdown = result
 
+    exam_rs = db.execute("SELECT title FROM exams WHERE id = ?", [participant["exam_id"]])
+    exam_title = exam_rs.rows[0][0] if exam_rs.rows else ""
+
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["question", "selected", "correct_answer", "result"])
+    writer.writerow(["Question", "Selected Option", "Correct Option", "Result"])
     for a in breakdown:
         selected = next((o for o in a["options"] if o["id"] == a["selected_option_id"]), None)
         correct = next((o for o in a["options"] if o["is_correct"]), None)
         writer.writerow(
             [
-                a["question_text"],
-                selected["option_text"] if selected else "",
-                correct["option_text"] if correct else "",
+                _wrap(a["question_text"]),
+                _wrap(selected["option_text"] if selected else ""),
+                _wrap(correct["option_text"] if correct else ""),
                 "Correct" if a["is_correct"] else "Incorrect",
             ]
         )
+
+    filename = _safe_filename(f"{participant['name']} Results for {exam_title}") + ".csv"
     return Response(
         buf.getvalue(),
         mimetype="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename=participant_{participant_id}_detail.csv"
-        },
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
