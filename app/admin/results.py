@@ -36,10 +36,10 @@ def exam_export_csv(exam_id):
     rows = results_rows(exam_id)
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["name", "email", "status", "score", "submitted_at"])
+    writer.writerow(["name", "email", "status", "score", "result", "submitted_at"])
     for r in rows:
         writer.writerow(
-            [r["name"], r["email"] or "", r["status"], r["total_score"], r["submitted_at"] or ""]
+            [r["name"], r["email"] or "", r["status"], r["total_score"], r["result"], r["submitted_at"] or ""]
         )
     return Response(
         buf.getvalue(),
