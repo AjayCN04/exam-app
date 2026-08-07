@@ -16,7 +16,9 @@
       <td>{{ r.email or "" }}</td>
       <td>{{ r.status }}</td>
       <td>{{ r.total_score if r.total_score is not none else "" }}</td>
-      <td>{{ r.result }}</td>
+      <td>
+        {% if r.result %}<span class="status-badge {{ 'completed' if r.result == 'Pass' else 'failed' }}">{{ r.result }}</span>{% endif %}
+      </td>
       <td>{{ r.submitted_at or "" }}</td>
       <td><a href="{{ url_for('admin.participant_detail', participant_id=r.id) }}">Detail</a></td>
     </tr>

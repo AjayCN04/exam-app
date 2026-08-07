@@ -2,35 +2,50 @@
 {% block title %}Admin Home{% endblock %}
 {% block admin_content %}
 <div class="hero">
-  <img src="{{ url_for('static', filename='images/home-hero.jpg') }}" alt=""
-       onerror="this.style.display='none'">
-  <h1>Exam Admin</h1>
-  <p>Create exams, manage participants, and review results.</p>
+  <span class="eyebrow">Admin Console</span>
+  <h1>Run every exam.<br>Without the busywork.</h1>
+  <p>Create exams, manage participants, and review results — all from one place.</p>
+  <div class="hero-actions">
+    <a class="btn-gradient" href="{{ url_for('admin.exam_new') }}">Create Exam →</a>
+    <a class="btn-outline" href="{{ url_for('admin.exams_list') }}">View Results</a>
+  </div>
 </div>
 
+<p class="section-label">Admin Tools</p>
 <div class="tile-grid">
   <a class="tile" href="{{ url_for('admin.exam_new') }}">
-    <span class="tile-icon">
-      <img src="{{ url_for('static', filename='images/icon-create-exam.png') }}" alt=""
-           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    <span class="tile-icon icon-violet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+        <path d="M14 3v6h6"/>
+        <path d="M12 12v6M9 15h6"/>
+      </svg>
     </span>
     <h3>Create Exam</h3>
-    <p>Pick modules, question counts, participants, and a pass mark.</p>
+    <p>Pick modules, question counts, and participants in one form.</p>
   </a>
 
   <a class="tile" href="{{ url_for('admin.exams_list') }}">
-    <span class="tile-icon">
-      <img src="{{ url_for('static', filename='images/icon-view-results.png') }}" alt=""
-           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    <span class="tile-icon icon-blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3v18h18"/>
+        <rect x="7" y="12" width="3" height="6"/>
+        <rect x="12" y="8" width="3" height="10"/>
+        <rect x="17" y="5" width="3" height="13"/>
+      </svg>
     </span>
     <h3>View Exam Results</h3>
-    <p>See status and scores for every exam, one at a time.</p>
+    <p>Track status and scores for every exam, one at a time.</p>
   </a>
 
   <a class="tile" href="{{ url_for('admin.users_list') }}">
-    <span class="tile-icon">
-      <img src="{{ url_for('static', filename='images/icon-manage-users.png') }}" alt=""
-           onerror="this.parentElement.style.background='#eaf1fa'; this.remove();">
+    <span class="tile-icon icon-rose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="8" r="3"/>
+        <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+        <circle cx="17" cy="9" r="2.3"/>
+        <path d="M15.5 14.2c2.5.4 4.5 2.5 4.5 5.3"/>
+      </svg>
     </span>
     <h3>Manage Users</h3>
     <p>Add, edit, and archive exam participants.</p>

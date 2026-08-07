@@ -1,12 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Admin Login{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+{% endblock %}
 {% block content %}
-<h1>Admin Login</h1>
-{% if error %}<p class="error">{{ error }}</p>{% endif %}
-
-<form method="post">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <label>Password <input type="password" name="password" required autofocus></label>
-  <button type="submit">Log in</button>
-</form>
+<div class="login-shell">
+  <div class="login-card">
+    <div class="mark"></div>
+    <h1>Exam Admin</h1>
+    <p class="sub">Sign in to manage exams and results.</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required autofocus>
+      <button type="submit">Log in</button>
+    </form>
+  </div>
+</div>
 {% endblock %}
