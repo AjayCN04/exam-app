@@ -413,6 +413,16 @@ body.admin select:focus {
   white-space: nowrap;
 }
 
+.pinned-list {
+  margin-bottom: 0.75rem;
+  opacity: 0.8;
+}
+
+.pinned-row label {
+  cursor: default;
+  font-style: italic;
+}
+
 .module-block {
   display: none;
 }
@@ -462,6 +472,12 @@ body.admin tr:last-child td {
 .status-badge.active { background: var(--accent-soft); color: var(--accent-ink); }
 .status-badge.completed { background: var(--good-bg); color: var(--good); }
 .status-badge.failed { background: var(--danger-bg); color: var(--danger); }
+.status-badge.closed { background: var(--danger-bg); color: var(--danger); }
+
+.row-actions form {
+  display: inline;
+  margin: 0;
+}
 
 /* ---------- Exam-created links table ---------- */
 .copy-btn {

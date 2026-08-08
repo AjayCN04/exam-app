@@ -1,8 +1,17 @@
 {% extends "admin/_layout.html" %}
-{% block title %}Exam Results{% endblock %}
+{% block title %}{{ "Archived Exams" if mode == "archived" else "Exams and Results" }}{% endblock %}
 {% block admin_content %}
-<h1>Exam Results</h1>
-<p class="actions"><a href="{{ url_for('admin.exam_new') }}">+ Create Exam</a></p>
+<h1>{{ "Archived Exams" if mode == "archived" else "Exams and Results" }}</h1>
+
+<div class="actions">
+  {% if mode == "archived" %}
+  <a href="{{ url_for('admin.exams_list') }}">&larr; Back to active exams</a>
+  {% else %}
+  <a href="{{ url_for('admin.exam_new') }}">+ Create Exam</a>
+  &middot;
+  <a href="{{ url_for('admin.exams_archived') }}">View Archived Exams</a>
+  {% endif %}
+</div>
 
 <table>
   <thead>
@@ -19,10 +28,34 @@
       <td>{{ e.title }}</td>
       <td>{{ e.exam_number }}</td>
       <td><span class="status-badge {{ e.status }}">{{ e.status }}</span></td>
-      <td><a href="{{ url_for('admin.exam_results', exam_id=e.id) }}">View Results</a></td>
+      <td class="row-actions">
+        {% if mode == "archived" %}
+        <form method="post" action="{{ url_for('admin.exam_reactivate', exam_id=e.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-secondary">Reactivate</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('admin.exam_results', exam_id=e.id) }}">View Results</a>
+        &middot;
+        <a href="{{ url_for('admin.exam_edit', exam_id=e.id) }}">Edit</a>
+        &middot;
+        {% if e.is_closed %}
+        <form method="post" action="{{ url_for('admin.exam_reopen', exam_id=e.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-secondary">Reopen</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('admin.exam_close', exam_id=e.id) }}" style="display:inline"
+              onsubmit="return confirm('Close ' + {{ e.title|tojson }} + '? Participants will no longer be able to open or submit it.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-danger">Close</button>
+        </form>
+        {% endif %}
+        {% endif %}
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="4">No exams created yet.</td></tr>
+    <tr><td colspan="4">No {{ "archived" if mode == "archived" else "" }} exams {{ "" if mode == "archived" else "created" }} yet.</td></tr>
     {% endfor %}
   </tbody>
 </table>

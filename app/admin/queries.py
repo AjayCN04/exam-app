@@ -11,23 +11,56 @@ def archived_users():
     return [r.asdict() for r in rs.rows]
 
 
+_STATUS_CASE = """
+    CASE
+        WHEN is_closed = 1 THEN 'closed'
+        WHEN datetime('now') < start_time THEN 'upcoming'
+        WHEN datetime('now') > end_time THEN 'completed'
+        ELSE 'active'
+    END AS status
+"""
+
+
 def list_exams_with_status():
     """Status is computed in SQL against the DB's own clock (datetime('now'))
     rather than in Python, so it can't drift from whatever clock start_time/
-    end_time were originally written against."""
+    end_time were originally written against. A manually closed exam always
+    reports 'closed' regardless of where it sits in that date window."""
     rs = db.execute(
-        """
-        SELECT id, exam_number, title, start_time, end_time,
-               CASE
-                   WHEN datetime('now') < start_time THEN 'upcoming'
-                   WHEN datetime('now') > end_time THEN 'completed'
-                   ELSE 'active'
-               END AS status
+        f"""
+        SELECT id, exam_number, title, start_time, end_time, is_closed, {_STATUS_CASE}
         FROM exams
+        WHERE is_active = 1
         ORDER BY created_at DESC
         """
     )
     return [r.asdict() for r in rs.rows]
+
+
+def list_archived_exams():
+    rs = db.execute(
+        f"""
+        SELECT id, exam_number, title, start_time, end_time, is_closed, {_STATUS_CASE}
+        FROM exams
+        WHERE is_active = 0
+        ORDER BY created_at DESC
+        """
+    )
+    return [r.asdict() for r in rs.rows]
+
+
+def exam_has_attempts(exam_id):
+    rs = db.execute(
+        """
+        SELECT 1
+        FROM exam_attempts eat
+        JOIN exam_access ea ON ea.id = eat.exam_access_id
+        WHERE ea.exam_id = ?
+        LIMIT 1
+        """,
+        [exam_id],
+    )
+    return bool(rs.rows)
 
 
 STATUS_LABELS = {

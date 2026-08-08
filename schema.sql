@@ -76,6 +76,8 @@ CREATE TABLE exams (
     max_attempts INTEGER,
     questions_per_module INTEGER,
     passing_percentage REAL,
+    is_closed INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

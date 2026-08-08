@@ -13,7 +13,7 @@ def _get_access(token):
         """
         SELECT ea.id AS exam_access_id, u.id AS user_id, u.name, u.email,
                e.id AS exam_id, e.title AS exam_title, e.set_id,
-               e.questions_per_module, e.passing_percentage
+               e.questions_per_module, e.passing_percentage, e.is_closed
         FROM exam_access ea
         JOIN users u ON u.id = ea.user_id
         JOIN exams e ON e.id = ea.exam_id
@@ -110,6 +110,8 @@ def show_exam(token):
     access = _get_access(token)
     if not access:
         abort(404)
+    if access["is_closed"]:
+        return render_template("already_completed.html", name=access["name"], closed=True)
 
     attempt = _get_or_create_attempt(access["exam_access_id"])
     if attempt["submitted_at"]:
@@ -134,6 +136,8 @@ def submit_exam(token):
     access = _get_access(token)
     if not access:
         abort(404)
+    if access["is_closed"]:
+        return render_template("already_completed.html", name=access["name"], closed=True)
 
     attempt = _get_or_create_attempt(access["exam_access_id"])
     if attempt["submitted_at"]:

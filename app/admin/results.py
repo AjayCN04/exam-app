@@ -9,13 +9,23 @@ from flask import Response, abort, render_template, request
 from . import admin_bp
 from .. import db
 from ..auth import admin_required
-from .queries import list_exams_with_status, results_rows
+from .queries import list_archived_exams, list_exams_with_status, results_rows
 
 
 @admin_bp.route("/exams")
 @admin_required
 def exams_list():
-    return render_template("admin/exams_list.html", exams=list_exams_with_status())
+    return render_template(
+        "admin/exams_list.html", exams=list_exams_with_status(), mode="active"
+    )
+
+
+@admin_bp.route("/exams/archived")
+@admin_required
+def exams_archived():
+    return render_template(
+        "admin/exams_list.html", exams=list_archived_exams(), mode="archived"
+    )
 
 
 @admin_bp.route("/exams/<int:exam_id>/results")

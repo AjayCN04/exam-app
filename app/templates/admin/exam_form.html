@@ -1,7 +1,7 @@
 {% extends "admin/_layout.html" %}
-{% block title %}Create Exam{% endblock %}
+{% block title %}{{ "Edit Exam" if exam else "Create Exam" }}{% endblock %}
 {% block admin_content %}
-<h1>Create Exam</h1>
+<h1>{{ "Edit Exam" if exam else "Create Exam" }}</h1>
 <p><a href="{{ url_for('admin.exams_list') }}">&larr; Back to exams</a></p>
 
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
@@ -19,12 +19,30 @@
     <input type="text" id="title" name="title" value="{{ form.get('title', '') }}" required>
   </div>
 
+  {% if content_locked %}
+  <div class="form-group">
+    <label>Question Set</label>
+    <p class="hint">{{ current_set_name }} &mdash; locked because at least one participant has already started this exam.</p>
+  </div>
+
+  <div class="form-group">
+    <label>Modules &amp; Question Counts</label>
+    <div class="checkbox-list">
+      {% for m in locked_modules %}
+      <div class="checkbox-row">
+        <label>{{ m.name }}</label>
+        <span class="available">{{ m.count }} question(s)</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
   <div class="form-group">
     <label for="set_id">Question Set</label>
     <select id="set_id" name="set_id" required>
       <option value="">Select a question set&hellip;</option>
       {% for s in sets %}
-      <option value="{{ s.id }}" {{ "selected" if form.get('set_id', type=int) == s.id else "" }}>{{ s.name }}</option>
+      <option value="{{ s.id }}" {{ "selected" if form.get('set_id')|int(0) == s.id else "" }}>{{ s.name }}</option>
       {% endfor %}
     </select>
   </div>
@@ -51,9 +69,22 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
   <div class="form-group">
     <label>Participants</label>
+
+    {% if pinned %}
+    <div class="checkbox-list pinned-list">
+      {% for user_id, info in pinned %}
+      <div class="checkbox-row pinned-row">
+        <input type="hidden" name="user_ids" value="{{ user_id }}">
+        <label>{{ info.name }} <span class="available">{{ info.email or "" }} &middot; already started, can't be removed</span></label>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {% if users %}
     <div class="checkbox-row">
       <input type="checkbox" id="select-all-users">
@@ -61,7 +92,7 @@
     </div>
     {% endif %}
     <div class="checkbox-list" id="user-checkbox-list">
-      {% for u in users %}
+      {% for u in users if not (granted.get(u.id) and granted[u.id].started) %}
       <div class="checkbox-row">
         <input type="checkbox" id="user_{{ u.id }}" name="user_ids" value="{{ u.id }}" class="user-checkbox"
                {{ "checked" if u.id|string in form.getlist('user_ids') else "" }}>
@@ -78,19 +109,30 @@
     <select id="passing_percentage" name="passing_percentage" required>
       <option value="">Select&hellip;</option>
       {% for p in pass_choices %}
-      <option value="{{ p }}" {{ "selected" if form.get('passing_percentage', type=int) == p else "" }}>{{ p }}%</option>
+      <option value="{{ p }}" {{ "selected" if form.get('passing_percentage')|int(0) == p else "" }}>{{ p }}%</option>
       {% endfor %}
     </select>
   </div>
 
-  <button type="submit">Create Exam</button>
+  <button type="submit">{{ "Save Changes" if exam else "Create Exam" }}</button>
 </form>
+
+{% if exam %}
+<div class="actions">
+  <form method="post" action="{{ url_for('admin.exam_archive', exam_id=exam.id) }}"
+        onsubmit="return confirm('Archive ' + {{ exam.title|tojson }} + '? It will be hidden from the main list but all data stays intact and can be restored from Archived Exams.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn-danger">Archive Exam</button>
+  </form>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
   (function () {
     var setSelect = document.getElementById("set_id");
+    if (!setSelect) return;
     var blocks = document.querySelectorAll(".module-block");
     var hint = document.getElementById("no-set-hint");
 
@@ -121,7 +163,7 @@
       });
     });
 
-    selectAll.checked = Array.prototype.every.call(userCheckboxes, function (c) { return c.checked; });
+    selectAll.checked = userCheckboxes.length > 0 && Array.prototype.every.call(userCheckboxes, function (c) { return c.checked; });
   })();
 </script>
 {% endblock %}

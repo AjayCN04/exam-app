@@ -1,8 +1,13 @@
 {% extends "base.html" %}
-{% block title %}{% if just_submitted %}Exam Submitted{% else %}Exam Already Completed{% endif %}{% endblock %}
+{% block title %}{% if closed %}Exam Closed{% elif just_submitted %}Exam Submitted{% else %}Exam Already Completed{% endif %}{% endblock %}
 {% block content %}
 <div class="result-card">
-  {% if just_submitted %}
+  {% if closed %}
+  <div class="icon">&#128274;</div>
+  <h1>Hi {{ name }}</h1>
+  <p>This exam has been closed by the administrator.</p>
+  <p>No further action is needed.</p>
+  {% elif just_submitted %}
   <div class="icon">&check;</div>
   <h1>Thank you, {{ name }}</h1>
   <p>Your exam has been submitted successfully.</p>
