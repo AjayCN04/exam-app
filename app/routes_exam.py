@@ -44,23 +44,32 @@ def _get_or_create_attempt(exam_access_id):
 
 def _select_question_ids(exam_id, set_id, questions_per_module):
     """The exam's fixed question list. Exams created via the admin UI have
-    per-module counts in exam_module_config — use those. Exams that predate
-    that feature have no rows there, and fall back to the legacy behavior:
-    every question in the set, or (if questions_per_module is set) the first
-    N — by order_index — from each module, applied uniformly."""
+    per-module counts in exam_module_config — for those, a random subset of
+    each module's question pool is chosen, seeded by exam_id so the pick is
+    unpredictable but identical on every call for that exam (both when the
+    exam is shown and again when it's graded) and identical for every
+    participant — presentation order is the pool's own order_index, kept
+    stable so it doesn't vary by sampling order. Exams that predate this
+    feature have no exam_module_config rows and fall back to the legacy
+    behavior: every question in the set, or (if questions_per_module is set)
+    the first N — by order_index — from each module, applied uniformly."""
     config_rs = db.execute(
-        "SELECT module_id, question_count FROM exam_module_config WHERE exam_id = ?",
+        "SELECT module_id, question_count FROM exam_module_config WHERE exam_id = ? "
+        "ORDER BY module_id",
         [exam_id],
     )
     if config_rs.rows:
+        rng = random.Random(exam_id)
         ids = []
         for module_id, question_count in config_rs.rows:
             rs = db.execute(
                 "SELECT id FROM questions WHERE set_id = ? AND module_id = ? "
-                "ORDER BY order_index LIMIT ?",
-                [set_id, module_id, question_count],
+                "ORDER BY order_index",
+                [set_id, module_id],
             )
-            ids.extend(row[0] for row in rs.rows)
+            pool = [row[0] for row in rs.rows]
+            chosen = set(rng.sample(pool, min(question_count, len(pool))))
+            ids.extend(qid for qid in pool if qid in chosen)
         return ids
 
     if not questions_per_module:
@@ -88,7 +97,12 @@ def _load_questions(exam_id, set_id, questions_per_module, seed):
         f"SELECT id, question_text FROM questions WHERE id IN ({placeholders})",
         question_ids,
     )
-    questions = [q.asdict() for q in q_rs.rows]
+    # WHERE ... IN (...) doesn't guarantee row order matches question_ids —
+    # rebuild in that exact order so presentation order is deterministic
+    # (module order, then order_index within module) now that it's no
+    # longer scrambled by a per-participant shuffle.
+    by_id = {q["id"]: q for q in (row.asdict() for row in q_rs.rows)}
+    questions = [by_id[qid] for qid in question_ids]
 
     for q in questions:
         opt_rs = db.execute(
@@ -97,8 +111,10 @@ def _load_questions(exam_id, set_id, questions_per_module, seed):
         )
         q["options"] = [o.asdict() for o in opt_rs.rows]
 
+    # Question set and order are the same for every participant of this exam
+    # (chosen deterministically in _select_question_ids); only each
+    # question's answer-choice order is randomized per participant.
     rng = random.Random(seed)
-    rng.shuffle(questions)
     for q in questions:
         rng.shuffle(q["options"])
 
