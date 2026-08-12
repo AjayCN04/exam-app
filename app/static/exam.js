@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function refresh() {
     let answered = 0;
     form.querySelectorAll("fieldset.question").forEach(function (fs) {
-      const checked = fs.querySelector('input[type="radio"]:checked');
+      const checked = fs.querySelector("input:checked");
       fs.classList.toggle("answered", !!checked);
       fs.querySelectorAll("label.option").forEach(function (label) {
         label.classList.toggle("selected", label.querySelector("input").checked);
@@ -36,6 +36,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       refresh();
     });
+  });
+
+  // Checkboxes (multi-select questions) are natively toggleable, unlike
+  // radios, so they don't need the deselect hack above — just re-run
+  // refresh() on click so the progress bar/label stay in sync.
+  form.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+    checkbox.addEventListener("click", refresh);
   });
 
   refresh();

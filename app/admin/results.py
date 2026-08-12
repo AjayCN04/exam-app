@@ -72,6 +72,19 @@ def exam_export_csv(exam_id):
     )
 
 
+def _selected_ids(answer_row):
+    """Selected option ids for one answer row — prefers the
+    selected_option_ids column (comma-joined, covers multi-select) and
+    falls back to the legacy scalar selected_option_id for attempt rows
+    that predate that column."""
+    raw = answer_row.get("selected_option_ids")
+    if raw:
+        return {int(x) for x in raw.split(",") if x}
+    if answer_row.get("selected_option_id") is not None:
+        return {answer_row["selected_option_id"]}
+    return set()
+
+
 def _participant_breakdown(participant_id):
     """Returns (participant, attempt, breakdown) for the given exam_access id,
     or None if it doesn't exist. Shared by the detail page and its CSV export
@@ -101,7 +114,7 @@ def _participant_breakdown(participant_id):
         ans_rs = db.execute(
             """
             SELECT q.id AS question_id, q.question_text,
-                   aa.selected_option_id, aa.is_correct
+                   aa.selected_option_id, aa.selected_option_ids, aa.is_correct
             FROM attempt_answers aa
             JOIN questions q ON q.id = aa.question_id
             WHERE aa.exam_attempt_id = ?
@@ -111,15 +124,10 @@ def _participant_breakdown(participant_id):
         )
         for a_row in ans_rs.rows:
             a = a_row.asdict()
+            a["selected_ids"] = _selected_ids(a)
             opt_rs = db.execute(
-                """
-                SELECT o.id, o.option_text,
-                       CASE WHEN o.id = ak.correct_option_id THEN 1 ELSE 0 END AS is_correct
-                FROM options o
-                LEFT JOIN answer_key ak ON ak.question_id = o.question_id
-                WHERE o.question_id = ?
-                ORDER BY o.order_index
-                """,
+                "SELECT id, option_text, is_correct FROM options "
+                "WHERE question_id = ? ORDER BY order_index",
                 [a["question_id"]],
             )
             a["options"] = [o.asdict() for o in opt_rs.rows]
@@ -170,13 +178,13 @@ def participant_export_csv(participant_id):
     writer = csv.writer(buf)
     writer.writerow(["Question", "Selected Option", "Correct Option", "Result"])
     for a in breakdown:
-        selected = next((o for o in a["options"] if o["id"] == a["selected_option_id"]), None)
-        correct = next((o for o in a["options"] if o["is_correct"]), None)
+        selected = [o["option_text"] for o in a["options"] if o["id"] in a["selected_ids"]]
+        correct = [o["option_text"] for o in a["options"] if o["is_correct"]]
         writer.writerow(
             [
                 _wrap(a["question_text"]),
-                _wrap(selected["option_text"] if selected else ""),
-                _wrap(correct["option_text"] if correct else ""),
+                _wrap("; ".join(selected)),
+                _wrap("; ".join(correct)),
                 "Correct" if a["is_correct"] else "Incorrect",
             ]
         )

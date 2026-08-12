@@ -12,12 +12,12 @@
   <thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Result</th></tr></thead>
   <tbody>
     {% for a in breakdown %}
-    {% set selected = a.options | selectattr("id", "equalto", a.selected_option_id) | first %}
-    {% set correct = a.options | selectattr("is_correct") | first %}
+    {% set selected = a.options | selectattr("id", "in", a.selected_ids) | map(attribute="option_text") | list %}
+    {% set correct = a.options | selectattr("is_correct") | map(attribute="option_text") | list %}
     <tr>
       <td>{{ a.question_text }}</td>
-      <td>{{ selected.option_text if selected else "(no answer)" }}</td>
-      <td>{{ correct.option_text if correct else "" }}</td>
+      <td>{{ selected | join("; ") if selected else "(no answer)" }}</td>
+      <td>{{ correct | join("; ") }}</td>
       <td>{{ "Correct" if a.is_correct else "Incorrect" }}</td>
     </tr>
     {% endfor %}

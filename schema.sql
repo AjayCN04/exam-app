@@ -40,14 +40,20 @@ CREATE TABLE questions (
     module_id INTEGER REFERENCES exam_modules(id),
     question_text TEXT NOT NULL,
     points INTEGER NOT NULL DEFAULT 1,
-    order_index INTEGER NOT NULL
+    order_index INTEGER NOT NULL,
+    -- Multi-select ("select all that apply") vs. single-answer questions.
+    is_multi_select INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     question_id INTEGER NOT NULL REFERENCES questions(id),
     option_text TEXT NOT NULL,
-    order_index INTEGER NOT NULL
+    order_index INTEGER NOT NULL,
+    -- Authoritative per-option correctness flag; supports 1..N correct
+    -- options per question. Source of truth for grading, superseding
+    -- answer_key.correct_option_id (kept below only for schema compat).
+    is_correct INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE answer_key (
@@ -118,6 +124,10 @@ CREATE TABLE attempt_answers (
     question_id INTEGER NOT NULL REFERENCES questions(id),
     selected_option_id INTEGER REFERENCES options(id),
     is_correct INTEGER NOT NULL DEFAULT 0,
+    -- Comma-joined option ids selected by the participant, populated for
+    -- every question (single- or multi-select). selected_option_id above
+    -- is still also populated for single-select answers for compatibility.
+    selected_option_ids TEXT,
     UNIQUE (exam_attempt_id, question_id)
 );
 

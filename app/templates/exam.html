@@ -21,10 +21,13 @@
       <span class="q-answered-flag">&check; Answered</span>
     </div>
     <p class="q-text">{{ q.question_text }}</p>
+    {% if q.is_multi_select %}
+    <p class="q-hint">(Select all that apply)</p>
+    {% endif %}
     <div class="options">
       {% for opt in q.options %}
       <label class="option">
-        <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}">
+        <input type="{{ 'checkbox' if q.is_multi_select else 'radio' }}" name="q_{{ q.id }}" value="{{ opt.id }}">
         <span class="option-text">{{ opt.option_text }}</span>
       </label>
       {% endfor %}

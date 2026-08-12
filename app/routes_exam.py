@@ -94,7 +94,7 @@ def _load_questions(exam_id, set_id, questions_per_module, seed):
     question_ids = _select_question_ids(exam_id, set_id, questions_per_module)
     placeholders = ",".join("?" for _ in question_ids)
     q_rs = db.execute(
-        f"SELECT id, question_text FROM questions WHERE id IN ({placeholders})",
+        f"SELECT id, question_text, is_multi_select FROM questions WHERE id IN ({placeholders})",
         question_ids,
     )
     # WHERE ... IN (...) doesn't guarantee row order matches question_ids —
@@ -164,27 +164,55 @@ def submit_exam(token):
     )
     placeholders = ",".join("?" for _ in question_ids)
     q_rs = db.execute(
-        f"""
-        SELECT q.id, q.points, ak.correct_option_id
-        FROM questions q
-        JOIN answer_key ak ON ak.question_id = q.id
-        WHERE q.id IN ({placeholders})
-        """,
+        f"SELECT id, points, is_multi_select FROM questions WHERE id IN ({placeholders})",
         question_ids,
     )
     questions = [q.asdict() for q in q_rs.rows]
 
+    # Authoritative correct-option set per question, from options.is_correct
+    # (supports 1..N correct options; answer_key.correct_option_id is no
+    # longer read here — see schema migration notes).
+    opts_rs = db.execute(
+        f"SELECT question_id, id AS option_id FROM options "
+        f"WHERE question_id IN ({placeholders}) AND is_correct = 1",
+        question_ids,
+    )
+    correct_ids_by_question = {}
+    for row in opts_rs.rows:
+        d = row.asdict()
+        correct_ids_by_question.setdefault(d["question_id"], set()).add(d["option_id"])
+
     answers = []
     for q in questions:
-        selected_raw = request.form.get(f"q_{q['id']}")
-        selected_id = int(selected_raw) if selected_raw else None
-        is_correct = selected_id is not None and selected_id == q["correct_option_id"]
+        correct_ids = correct_ids_by_question.get(q["id"], set())
+        if q["is_multi_select"]:
+            raw_values = request.form.getlist(f"q_{q['id']}")
+        else:
+            single = request.form.get(f"q_{q['id']}")
+            raw_values = [single] if single else []
+
+        selected_ids = set()
+        for v in raw_values:
+            try:
+                selected_ids.add(int(v))
+            except (TypeError, ValueError):
+                pass
+
+        is_correct = bool(selected_ids) and selected_ids == correct_ids
         answers.append((is_correct, q["points"]))
 
+        # selected_option_id (legacy scalar) is only meaningful for
+        # single-select; selected_option_ids covers both, going forward.
+        selected_option_id = (
+            next(iter(selected_ids)) if (not q["is_multi_select"] and selected_ids) else None
+        )
+        selected_option_ids_text = ",".join(str(i) for i in sorted(selected_ids)) or None
+
         db.execute(
-            "INSERT INTO attempt_answers (exam_attempt_id, question_id, selected_option_id, is_correct) "
-            "VALUES (?, ?, ?, ?)",
-            [attempt["id"], q["id"], selected_id, 1 if is_correct else 0],
+            "INSERT INTO attempt_answers "
+            "(exam_attempt_id, question_id, selected_option_id, is_correct, selected_option_ids) "
+            "VALUES (?, ?, ?, ?, ?)",
+            [attempt["id"], q["id"], selected_option_id, 1 if is_correct else 0, selected_option_ids_text],
         )
 
     result = score_attempt(answers, passing_percentage_override=access["passing_percentage"])
