@@ -9,7 +9,7 @@
 <p>Score: {{ attempt.total_score if attempt.total_score is not none else "In progress" }}</p>
 <p class="actions"><a href="{{ url_for('admin.participant_export_csv', participant_id=participant.id) }}">Export CSV</a></p>
 <table>
-  <thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Result</th></tr></thead>
+  <thead><tr><th>Question</th><th>Selected</th><th>Correct Answer</th><th>Justification</th><th>Result</th></tr></thead>
   <tbody>
     {% for a in breakdown %}
     {% set selected = a.options | selectattr("id", "in", a.selected_ids) | map(attribute="option_text") | list %}
@@ -18,6 +18,7 @@
       <td>{{ a.question_text }}</td>
       <td>{{ selected | join("; ") if selected else "(no answer)" }}</td>
       <td>{{ correct | join("; ") }}</td>
+      <td>{{ a.justification or "" }}</td>
       <td>{{ "Correct" if a.is_correct else "Incorrect" }}</td>
     </tr>
     {% endfor %}

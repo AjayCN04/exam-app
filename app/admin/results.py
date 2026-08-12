@@ -114,9 +114,11 @@ def _participant_breakdown(participant_id):
         ans_rs = db.execute(
             """
             SELECT q.id AS question_id, q.question_text,
-                   aa.selected_option_id, aa.selected_option_ids, aa.is_correct
+                   aa.selected_option_id, aa.selected_option_ids, aa.is_correct,
+                   ak.justification
             FROM attempt_answers aa
             JOIN questions q ON q.id = aa.question_id
+            LEFT JOIN answer_key ak ON ak.question_id = q.id
             WHERE aa.exam_attempt_id = ?
             ORDER BY q.order_index
             """,
@@ -176,7 +178,7 @@ def participant_export_csv(participant_id):
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["Question", "Selected Option", "Correct Option", "Result"])
+    writer.writerow(["Question", "Selected Option", "Correct Option", "Justification", "Result"])
     for a in breakdown:
         selected = [o["option_text"] for o in a["options"] if o["id"] in a["selected_ids"]]
         correct = [o["option_text"] for o in a["options"] if o["is_correct"]]
@@ -185,6 +187,7 @@ def participant_export_csv(participant_id):
                 _wrap(a["question_text"]),
                 _wrap("; ".join(selected)),
                 _wrap("; ".join(correct)),
+                _wrap(a["justification"] or ""),
                 "Correct" if a["is_correct"] else "Incorrect",
             ]
         )
