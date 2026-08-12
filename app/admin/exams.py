@@ -53,9 +53,9 @@ def exam_new():
         module_counts = {}
         if chosen_set:
             for module in chosen_set["modules"]:
-                if not request.form.get(f"module_{module['id']}"):
+                if not request.form.get(f"module_{set_id}_{module['id']}"):
                     continue
-                count_raw = request.form.get(f"count_{module['id']}", "").strip()
+                count_raw = request.form.get(f"count_{set_id}_{module['id']}", "").strip()
                 if count_raw.isdigit() and int(count_raw) > 0:
                     module_counts[module["id"]] = min(int(count_raw), module["available"])
 
@@ -220,9 +220,9 @@ def exam_edit(exam_id):
             module_counts = {}
             if chosen_set:
                 for module in chosen_set["modules"]:
-                    if not request.form.get(f"module_{module['id']}"):
+                    if not request.form.get(f"module_{set_id}_{module['id']}"):
                         continue
-                    count_raw = request.form.get(f"count_{module['id']}", "").strip()
+                    count_raw = request.form.get(f"count_{set_id}_{module['id']}", "").strip()
                     if count_raw.isdigit() and int(count_raw) > 0:
                         module_counts[module["id"]] = min(int(count_raw), module["available"])
 
@@ -300,8 +300,8 @@ def exam_edit(exam_id):
             ),
         ]
         for mid, cnt in module_counts_by_id.items():
-            pairs.append((f"module_{mid}", "on"))
-            pairs.append((f"count_{mid}", str(cnt)))
+            pairs.append((f"module_{exam['set_id']}_{mid}", "on"))
+            pairs.append((f"count_{exam['set_id']}_{mid}", str(cnt)))
         for user_id in granted:
             pairs.append(("user_ids", str(user_id)))
         form_data = MultiDict(pairs)

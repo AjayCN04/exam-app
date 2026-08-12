@@ -55,12 +55,12 @@
       <div class="checkbox-list">
         {% for m in s.modules %}
         <div class="checkbox-row">
-          <input type="checkbox" id="module_{{ m.id }}" name="module_{{ m.id }}"
-                 {{ "checked" if form.get('module_' ~ m.id) else "" }}>
-          <label for="module_{{ m.id }}">{{ m.name }}</label>
+          <input type="checkbox" id="module_{{ s.id }}_{{ m.id }}" name="module_{{ s.id }}_{{ m.id }}"
+                 {{ "checked" if form.get('module_' ~ s.id ~ '_' ~ m.id) else "" }}>
+          <label for="module_{{ s.id }}_{{ m.id }}">{{ m.name }}</label>
           <span class="available">{{ m.available }} available</span>
-          <input type="number" name="count_{{ m.id }}" min="1" max="{{ m.available }}"
-                 value="{{ form.get('count_' ~ m.id, '') }}" placeholder="count">
+          <input type="number" name="count_{{ s.id }}_{{ m.id }}" min="1" max="{{ m.available }}"
+                 value="{{ form.get('count_' ~ s.id ~ '_' ~ m.id, '') }}" placeholder="count">
         </div>
         {% else %}
         <p>This set has no modules with questions yet.</p>
