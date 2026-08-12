@@ -4,10 +4,12 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --timeout 60
     envVars:
       - key: PASSING_PERCENTAGE
         value: "80"
+      - key: WEB_CONCURRENCY
+        value: "4"
       - key: TURSO_DATABASE_URL
         sync: false
       - key: TURSO_AUTH_TOKEN
