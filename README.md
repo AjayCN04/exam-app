@@ -68,6 +68,24 @@ This creates `content/questions_template.xlsx` and `content/participants_templat
 Word documents are intentionally not supported — free-form text can't be parsed reliably enough
 for something correctness-sensitive like an answer key.
 
+## Adding another question set
+
+To add a new Question Set (its own entry in the admin "Create Exam" dropdown, with its own
+modules and questions), use `scripts/import_master_question_list.py` instead of the scripts above.
+It expects a `.xlsx` or `.csv` with columns `Module, Question, Answer Choice 1-4, Correct Choice
+Number, Correct Choice, Justification` (one row per question; `Correct Choice Number`/`Correct
+Choice` may be `;`-separated for multi-select "select all that apply" questions) — see
+`app/exam_content/Claude_Architect_Foundations_Master_Question_List.xlsx` for the exact format.
+
+```bash
+python scripts/import_master_question_list.py path/to/file.xlsx --set-name "Your Question Set Name"
+```
+
+This creates the `question_sets` row if it doesn't exist yet, reuses any `exam_modules` that
+already match by name (modules are shared globally across sets) or creates new ones from the
+file's `Module` column, and validates every row before writing anything. The set then shows up
+automatically in the admin Create Exam dropdown — no code changes needed.
+
 ## Running locally
 
 ```bash
