@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,9 +26,20 @@ DEFAULT_QUESTION_SET_NAME = "Claude Architect Foundations Master Question List"
 # Answer Choice 4, Correct Choice Number, Correct Choice, Justification
 #
 # Correct Choice Number/Correct Choice are usually single-valued (single-
-# answer question), but may instead be ";"-separated lists of equal length
-# (e.g. "1;3;4" / "Choice A; Choice C; Choice D") to describe a multi-select
-# ("select all that apply") question with more than one correct answer.
+# answer question), but may instead describe a multi-select ("select all
+# that apply") question with more than one correct answer, in either of two
+# conventions seen across real content files:
+#   - ";"-separated: "1;3;4" / "Choice A; Choice C; Choice D" (one Correct
+#     Choice part per index, exact-matching the corresponding Answer Choice).
+#   - ","-separated: "1,3" / "1. Choice A\n3. Choice C" (Correct Choice is a
+#     single field with one "N. <text>" line per index, joined by newlines).
+
+
+def _split_correct_desc(correct_desc, delimiter):
+    if delimiter == ",":
+        parts = str(correct_desc).split("\n")
+        return [re.sub(r"^\d+\.\s*", "", p.strip()) for p in parts]
+    return [p.strip() for p in str(correct_desc).split(delimiter)]
 
 
 def _parse_row(row_num, row):
@@ -49,8 +61,9 @@ def _parse_row(row_num, row):
 
     choices = [c1, c2, c3, c4]
 
+    delimiter = ";" if ";" in str(correct_num) else ","
     correct_indices = []
-    for part in str(correct_num).split(";"):
+    for part in str(correct_num).split(delimiter):
         part = part.strip()
         try:
             idx = int(part) - 1
@@ -69,13 +82,13 @@ def _parse_row(row_num, row):
     if errors:
         return None, errors
 
-    # Only split "Correct Choice" on ";" for genuinely multi-value rows —
-    # a single-answer row's text may itself legitimately contain a literal
-    # semicolon (e.g. "...among several; data quality...").
+    # Only split "Correct Choice" for genuinely multi-value rows — a single-
+    # answer row's text may itself legitimately contain a literal ";" or ","
+    # (e.g. "...among several; data quality...").
     if len(correct_indices) == 1:
         correct_desc_parts = [str(correct_desc).strip()]
     else:
-        correct_desc_parts = [p.strip() for p in str(correct_desc).split(";")]
+        correct_desc_parts = _split_correct_desc(correct_desc, delimiter)
     if len(correct_desc_parts) != len(correct_indices):
         errors.append(
             f"Row {row_num}: 'Correct Choice' has {len(correct_desc_parts)} part(s) but "
