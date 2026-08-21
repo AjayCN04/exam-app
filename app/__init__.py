@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 from flask import Flask
@@ -12,6 +13,8 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
     app.config["ADMIN_PASSWORD"] = os.environ["ADMIN_PASSWORD"]
     app.config["PASSING_PERCENTAGE"] = float(os.environ["PASSING_PERCENTAGE"])
+    app.config["WTF_CSRF_TIME_LIMIT"] = 10800  # 3 hours, to cover long exam sessions
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=3)
 
     CSRFProtect(app)
 

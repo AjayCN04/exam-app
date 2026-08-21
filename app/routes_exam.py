@@ -1,6 +1,6 @@
 import random
 
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, render_template, request, session
 
 from . import db
 from .scoring import score_attempt
@@ -123,6 +123,7 @@ def _load_questions(exam_id, set_id, questions_per_module, seed):
 
 @exam_bp.route("/exam/<token>", methods=["GET"])
 def show_exam(token):
+    session.permanent = True
     access = _get_access(token)
     if not access:
         abort(404)
