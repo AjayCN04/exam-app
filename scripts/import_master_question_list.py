@@ -84,9 +84,11 @@ def _parse_row(row_num, row):
 
     # Only split "Correct Choice" for genuinely multi-value rows — a single-
     # answer row's text may itself legitimately contain a literal ";" or ","
-    # (e.g. "...among several; data quality...").
+    # (e.g. "...among several; data quality..."). Some source files prefix
+    # even single-answer rows with "N. " (matching the multi-select "N. "
+    # convention) — strip it the same way; a no-op when it's not present.
     if len(correct_indices) == 1:
-        correct_desc_parts = [str(correct_desc).strip()]
+        correct_desc_parts = [re.sub(r"^\d+\.\s*", "", str(correct_desc).strip())]
     else:
         correct_desc_parts = _split_correct_desc(correct_desc, delimiter)
     if len(correct_desc_parts) != len(correct_indices):
