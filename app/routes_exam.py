@@ -104,12 +104,22 @@ def _load_questions(exam_id, set_id, questions_per_module, seed):
     by_id = {q["id"]: q for q in (row.asdict() for row in q_rs.rows)}
     questions = [by_id[qid] for qid in question_ids]
 
-    for q in questions:
-        opt_rs = db.execute(
-            "SELECT id, option_text FROM options WHERE question_id = ? ORDER BY order_index",
-            [q["id"]],
+    # One round trip for every question's options, instead of one round trip
+    # per question — matters under concurrent load, where N sequential Turso
+    # calls per participant page-load compounds fast.
+    opt_rs = db.execute(
+        f"SELECT question_id, id, option_text FROM options WHERE question_id IN ({placeholders}) "
+        f"ORDER BY question_id, order_index",
+        question_ids,
+    )
+    options_by_question = {}
+    for row in opt_rs.rows:
+        d = row.asdict()
+        options_by_question.setdefault(d["question_id"], []).append(
+            {"id": d["id"], "option_text": d["option_text"]}
         )
-        q["options"] = [o.asdict() for o in opt_rs.rows]
+    for q in questions:
+        q["options"] = options_by_question.get(q["id"], [])
 
     # Question set and order are the same for every participant of this exam
     # (chosen deterministically in _select_question_ids); only each
@@ -184,6 +194,7 @@ def submit_exam(token):
         correct_ids_by_question.setdefault(d["question_id"], set()).add(d["option_id"])
 
     answers = []
+    answer_inserts = []
     for q in questions:
         correct_ids = correct_ids_by_question.get(q["id"], set())
         if q["is_multi_select"]:
@@ -209,12 +220,17 @@ def submit_exam(token):
         )
         selected_option_ids_text = ",".join(str(i) for i in sorted(selected_ids)) or None
 
-        db.execute(
+        answer_inserts.append((
             "INSERT INTO attempt_answers "
             "(exam_attempt_id, question_id, selected_option_id, is_correct, selected_option_ids) "
             "VALUES (?, ?, ?, ?, ?)",
             [attempt["id"], q["id"], selected_option_id, 1 if is_correct else 0, selected_option_ids_text],
-        )
+        ))
+
+    # One round trip for every question's answer, instead of one round trip
+    # per question — same reasoning as the options fetch above.
+    if answer_inserts:
+        db.batch(answer_inserts)
 
     result = score_attempt(answers, passing_percentage_override=access["passing_percentage"])
 

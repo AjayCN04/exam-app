@@ -42,7 +42,15 @@ def execute(sql, args=None):
 
 def batch(statements):
     """statements: list of (sql, args) tuples, run as a single transaction."""
-    return get_client().batch(statements)
+    last_error = None
+    for attempt in range(1, _MAX_ATTEMPTS + 1):
+        try:
+            return get_client().batch(statements)
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt < _MAX_ATTEMPTS:
+                time.sleep(_RETRY_DELAY_SECONDS * attempt)
+    raise last_error
 
 
 def close_client():
